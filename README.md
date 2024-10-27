@@ -19,6 +19,9 @@ pip install -r requirements.txt
 ```bash
 $env:PATH += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin"
 $env:PATH += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\libnvvp"
+
+$env:PATH += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\cudnn\bin"
+
 ```
 ## ACG Arrhythmia Classification Data
 
