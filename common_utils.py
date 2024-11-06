@@ -1,5 +1,10 @@
+import numpy as np
+import torch
+
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import LabelEncoder
 
 class CNN1D(nn.Module):
     def __init__(self, num_classes):
@@ -59,3 +64,37 @@ class CNN1D_2(nn.Module):
         x = self.dropout(x)  # Dropout
         x = self.fc2(x)  # Output layer
         return x
+    
+def evaluateCNN_model(x_data, y_label, num_classes, model, batch_size=32, device='cpu'):
+    # Initialize Label Encoder
+    label_encoder = LabelEncoder()
+    y = label_encoder.fit_transform(y_label.values.ravel())
+    y = np.eye(num_classes)[y]  # One-hot encoding
+
+    # Prepare data for model
+    X = x_data
+    X_test = np.expand_dims(X, axis=1)    # Add a new dimension to match model input
+    X_test_tensor = torch.tensor(X_test).float()    # Convert to float tensor
+    y_test_tensor = torch.tensor(y).long()          # Convert to long tensor for labels
+
+    # Create DataLoader
+    test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    # Set model to evaluation mode
+    model.eval()
+
+    # Evaluate accuracy
+    correct_test = 0
+    total_test = 0
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)  # Move to specified device
+            outputs = model(inputs)  # Forward pass
+            _, predicted = torch.max(outputs.data, 1)
+            total_test += labels.size(0)
+            correct_test += (predicted == labels.argmax(dim=1)).sum().item()
+
+    accuracy = correct_test / total_test  # Calculate test accuracy
+    print(f'Test Accuracy for CNN model: {accuracy:.4f}')
+    return accuracy
