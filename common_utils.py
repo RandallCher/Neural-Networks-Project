@@ -392,3 +392,17 @@ class LitTransformer(LightningModule):
         avg_acc = torch.stack([x['test_acc'] for x in outputs]).mean()
         self.log("test_loss", avg_loss, on_epoch=True, prog_bar=True)
         self.log("test_acc", avg_acc, on_epoch=True, prog_bar=True)
+
+def setSeeds(seed=11):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    return seed
+
+def get_dataloaders(X_train, X_test, y_train, y_test, batchSize=32):
+    train_dataset = TensorDataset(torch.as_tensor(X_train, dtype=torch.float), torch.as_tensor(y_train, dtype=torch.float))
+    val_dataset = TensorDataset(torch.as_tensor(X_test, dtype=torch.float), torch.as_tensor(y_test, dtype=torch.float))
+
+    train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
+    test_loader = DataLoader(val_dataset, batch_size=batchSize)
+
+    return train_loader, test_loader
