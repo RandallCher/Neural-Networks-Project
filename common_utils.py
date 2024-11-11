@@ -82,6 +82,7 @@ import os
 import copy
 import pandas as pd
 import math
+import random
 
 from pytorch_lightning import LightningModule, LightningDataModule
 from torch.utils.data.dataset import Dataset
@@ -393,16 +394,37 @@ class LitTransformer(LightningModule):
         self.log("test_loss", avg_loss, on_epoch=True, prog_bar=True)
         self.log("test_acc", avg_acc, on_epoch=True, prog_bar=True)
 
-def setSeeds(seed=11):
+def set_and_get_seed(seed=42):
+    '''
+    Set random seeds
+    
+    Parameters
+    ----------
+
+    seed : int
+        seed, default=42
+
+    '''
     torch.manual_seed(seed)
     np.random.seed(seed)
+    random.seed(seed)
     return seed
 
-def get_dataloaders(X_train, X_test, y_train, y_test, batchSize=32):
-    train_dataset = TensorDataset(torch.as_tensor(X_train, dtype=torch.float), torch.as_tensor(y_train, dtype=torch.float))
-    val_dataset = TensorDataset(torch.as_tensor(X_test, dtype=torch.float), torch.as_tensor(y_test, dtype=torch.float))
+def get_dataloader(X, y, is_test, batchSize=32):
+    '''
+    Get DataLoader object given X and y inputs
+    
+    Parameters
+    ----------
+    X : array-like
 
-    train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
-    test_loader = DataLoader(val_dataset, batch_size=batchSize)
+    y : array-like
 
-    return train_loader, test_loader
+    is_test : bool  
+        sets the shuffle parameter in DataLoader class, true for train datasets, false for test datasets
+
+    '''
+    dataset = TensorDataset(torch.as_tensor(X, dtype=torch.float), torch.as_tensor(y, dtype=torch.float))
+    dataloader = DataLoader(dataset, batch_size=batchSize, shuffle=is_test)
+
+    return dataloader
