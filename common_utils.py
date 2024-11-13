@@ -76,8 +76,94 @@ def evaluateCNN_model(x_data, y_label, num_classes, model, batch_size=32, device
     print(f'Test Accuracy for CNN model: {accuracy:.4f}')
     return accuracy
 
-# Transformers functions
+#RNN Model
+class GRUModel(nn.Module):
+    def __init__(self, inputSize, hiddenSize, numLayers, numClasses):
+        super(GRUModel, self).__init__()
+        
+        # Define the GRU layer
+        self.gru = nn.GRU(input_size=inputSize, 
+                          hidden_size=hiddenSize, 
+                          num_layers=numLayers, 
+                          batch_first=True
+                          )
+        
+        # Define a fully connected output layer
+        self.fc = nn.Linear(hiddenSize, numClasses)
+    
+    def forward(self, x):
+        # Initialize hidden state for GRU
+        h0 = torch.zeros(self.gru.num_layers * (2 if self.gru.bidirectional else 1), x.size(0), self.gru.hidden_size).to(x.device)
+        
+        # Forward propagate through GRU
+        out, _ = self.gru(x, h0)
+        
+        # Take the output from the last time step
+        out = out[:, -1, :]
+        
+        # Pass through the fully connected layer
+        out = self.fc(out)
+        return out
+# Transformers evaluation
 
+def cnn_transformer_evaluate(model, test_loader, criterion, device):
+    model.eval()  
+
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():  # No need to compute gradients during testing
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)         
+            loss = criterion(output, target)
+            running_loss += loss.item()
+            _, predicted = torch.max(output, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(target.cpu().numpy())
+    
+    epoch_loss = running_loss / len(test_loader)
+    epoch_acc = correct / total
+    return epoch_loss, epoch_acc, all_preds, all_labels
+
+# CNN_GRU
+class CNN_GRU(nn.Module):
+    def __init__(self, num_classes=5):
+        super(CNN_GRU, self).__init__()
+
+        self.conv_layers = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3),
+            nn.BatchNorm1d(num_features=64),
+            nn.MaxPool1d(kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(64, 128, kernel_size=3),
+            nn.BatchNorm1d(num_features=128),
+            nn.MaxPool1d(kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(128, 256, kernel_size=3),
+            nn.BatchNorm1d(num_features=256),
+            nn.MaxPool1d(kernel_size=2),
+            nn.ReLU(),
+        )
+
+        self.gru = nn.GRU(input_size=256, hidden_size=64, batch_first=True)
+        self.fc = nn.Linear(64, num_classes)
+
+    def forward(self, x):
+        x = self.conv_layers(x)
+        x = torch.permute(x, (0, 2, 1))
+
+        x, hidden_state = self.gru(x)
+        x = x[:, -1, :]
+
+        x = self.fc(x)
+        
+        return x
 
 
 import random
