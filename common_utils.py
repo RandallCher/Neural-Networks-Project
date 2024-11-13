@@ -149,7 +149,7 @@ def train(model, optimizer, train_loader, device, criterion=nn.CrossEntropyLoss(
 
     return train_loss, train_accuracy
 
-def evaluate(model, test_loader, device, scheduler=None, criterion=nn.CrossEntropyLoss()):
+def evaluate(model, test_loader, device, criterion=nn.CrossEntropyLoss()):
     '''
     Function for validation/testing
     '''
@@ -173,9 +173,6 @@ def evaluate(model, test_loader, device, scheduler=None, criterion=nn.CrossEntro
         # Calculate average validation loss and accuracy
         test_loss /= len(test_loader.dataset)
         test_acc = correct / len(test_loader.dataset)
-
-        if scheduler != None:
-            scheduler.step(test_loss)
         
     return test_loss, test_acc
 
@@ -190,9 +187,12 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, device, num_e
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
 
-        val_loss, val_acc = evaluate(model, scheduler, val_loader, device)
+        val_loss, val_acc = evaluate(model, val_loader, device)
         val_losses.append(val_loss)
         val_accuracies.append(val_acc)
+
+        if scheduler:
+            scheduler.step()
 
         # Print epoch results
         print(f'Epoch [{epoch+1}/{num_epochs}], '
