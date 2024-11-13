@@ -180,16 +180,16 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, device, num_e
     model = model.to(device)
 
     train_losses, train_accuracies = [], []
-    val_losses, val_accuracies = [], []
+    test_losses, test_accuracies = [], []
 
     for epoch in range(num_epochs):
         train_loss, train_acc = train(model, optimizer, train_loader, device)
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
 
-        val_loss, val_acc = evaluate(model, val_loader, device)
-        val_losses.append(val_loss)
-        val_accuracies.append(val_acc)
+        test_loss, test_acc = evaluate(model, val_loader, device)
+        test_losses.append(test_loss)
+        test_losses.append(test_acc)
 
         if scheduler:
             scheduler.step()
@@ -198,7 +198,7 @@ def train_and_evaluate(model, optimizer, train_loader, val_loader, device, num_e
         print(f'Epoch [{epoch+1}/{num_epochs}], '
             f'Train Loss: {train_loss:.4f}, '
             f'Train Accuracy: {train_acc * 100:.2f}%, '
-            f'Validation Loss: {val_loss:.4f}, '
-            f'Validation Accuracy: {val_acc * 100:.2f}%')
+            f'Test Loss: {test_loss:.4f}, '
+            f'Test Accuracy: {test_acc * 100:.2f}%')
         
-    return train_losses, train_accuracies, val_losses, val_accuracies
+    return train_losses, train_accuracies, test_losses, test_accuracies
