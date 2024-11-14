@@ -93,7 +93,7 @@ class GRUModel(nn.Module):
     
     def forward(self, x):
         # Initialize hidden state for GRU
-        h0 = torch.zeros(self.gru.num_layers * (2 if self.gru.bidirectional else 1), x.size(0), self.gru.hidden_size).to(x.device)
+        h0 = torch.zeros(self.gru.num_layers, x.size(0), self.gru.hidden_size).to(x.device)
         
         # Forward propagate through GRU
         out, _ = self.gru(x, h0)
@@ -104,8 +104,8 @@ class GRUModel(nn.Module):
         # Pass through the fully connected layer
         out = self.fc(out)
         return out
+    
 # Transformers evaluation
-
 def cnn_transformer_evaluate(model, test_loader, criterion, device):
     model.eval()  
 
@@ -165,9 +165,6 @@ class CNN_GRU(nn.Module):
         
         return x
 
-
-import random
-
 def set_and_get_seed(seed=42):
     '''
     Set random seeds
@@ -201,90 +198,3 @@ def get_dataloader(X, y, is_train, batchSize=32):
     dataloader = DataLoader(dataset, batch_size=batchSize, shuffle=is_train)
 
     return dataloader
-
-def train(model, optimizer, train_loader, device, criterion=nn.CrossEntropyLoss()):
-    '''
-    One training epoch
-    '''
-    model.train()
-
-    train_correct = 0
-    train_loss = 0
-
-    for X_batch, y_batch in train_loader:
-        X_batch, y_batch = X_batch.to(device), y_batch.to(device)  # Move data to device
-        
-        # Forward pass
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch.long())
-        
-        # Backward pass and optimization
-        optimizer.zero_grad()  # Clear gradients
-        loss.backward()        # Backpropagation
-        optimizer.step()       # Update weights
-
-        # Get predictions
-        _, predicted = torch.max(outputs, 1)
-        train_correct += (predicted == y_batch).sum().item()
-        
-        train_loss += loss.item() * X_batch.size(0)  # Accumulate loss
-
-    # Calculate average training loss
-    train_loss /= len(train_loader.dataset)
-    train_accuracy = train_correct / len(train_loader.dataset)
-
-    return train_loss, train_accuracy
-
-def evaluate(model, test_loader, device, criterion=nn.CrossEntropyLoss()):
-    '''
-    Function for validation/testing
-    '''
-    model.eval()
-
-    test_loss = 0.0
-    test_acc = 0.0
-    correct = 0
-
-    with torch.no_grad():  # No need to calculate gradients for validation/testing
-        for X_batch, y_batch in test_loader:
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch.long())
-            test_loss += loss.item() * X_batch.size(0)
-            
-            # Get predictions
-            _, predicted = torch.max(outputs, 1)
-            correct += (predicted == y_batch).sum().item()
-        
-        # Calculate average validation loss and accuracy
-        test_loss /= len(test_loader.dataset)
-        test_acc = correct / len(test_loader.dataset)
-        
-    return test_loss, test_acc
-
-def train_and_evaluate(model, optimizer, train_loader, val_loader, device, num_epochs, scheduler=None):
-    model = model.to(device)
-
-    train_losses, train_accuracies = [], []
-    test_losses, test_accuracies = [], []
-
-    for epoch in range(num_epochs):
-        train_loss, train_acc = train(model, optimizer, train_loader, device)
-        train_losses.append(train_loss)
-        train_accuracies.append(train_acc)
-
-        test_loss, test_acc = evaluate(model, val_loader, device)
-        test_losses.append(test_loss)
-        test_losses.append(test_acc)
-
-        if scheduler:
-            scheduler.step()
-
-        # Print epoch results
-        print(f'Epoch [{epoch+1}/{num_epochs}], '
-            f'Train Loss: {train_loss:.4f}, '
-            f'Train Accuracy: {train_acc * 100:.2f}%, '
-            f'Test Loss: {test_loss:.4f}, '
-            f'Test Accuracy: {test_acc * 100:.2f}%')
-        
-    return train_losses, train_accuracies, test_losses, test_accuracies
